@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 
 // Ganti ini dengan URL dan anon key lo
 const supabase = createClient(
-  'https://xxxx.supabase.co',
-  'your-anon-key'
+  'https://neurxtlohabhnwfuduql.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldXJ4dGxvaGFiaG53ZnVkdXFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExMDUxODYsImV4cCI6MjA2NjY4MTE4Nn0.mc7s5chhuHriv8b6Pna1hfI0PkVWp3LKyTSWvICr_fw'
 )
 
 type Post = {
