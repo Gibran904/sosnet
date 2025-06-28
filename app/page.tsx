@@ -1,51 +1,71 @@
-"use client"
-import { useState, useEffect } from "react"
-import { createClient } from "@supabase/supabase-js"
+'use client'
 
-// Ganti ini dengan URL & anon key dari Supabase lo
-const supabase = createClient(
-  "https://neurxtlohabhnwfuduql.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldXJ4dGxvaGFiaG53ZnVkdXFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExMDUxODYsImV4cCI6MjA2NjY4MTE4Nn0.mc7s5chhuHriv8b6Pna1hfI0PkVWp3LKyTSWvICr_fw"
-)
+import { useEffect, useState } from 'react'
+import { useSupabase } from '@/utils/supabase/provider'
 
 type Post = {
   id: string
-  username: string
   content: string
+  user_id: string
+  user_email: string
   created_at: string
 }
 
-export default function Home() {
-  const [username, setUsername] = useState("")
-  const [content, setContent] = useState("")
+export default function Page() {
+  const { supabase, session } = useSupabase()
   const [posts, setPosts] = useState<Post[]>([])
+  const [content, setContent] = useState('')
+  const [email, setEmail] = useState('')
+
+  async function fetchPosts() {
+    const { data } = await supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    setPosts(data ?? [])
+  }
 
   async function handlePost() {
-    if (!username.trim() || !content.trim()) {
-      alert("Isi dulu username & kontennya bro 😭")
-      return
-    }
+    if (!content.trim()) return
 
-    const { error } = await supabase.from("posts").insert([
-      { username, content }
+    const user = session?.user
+
+    const { error } = await supabase.from('posts').insert([
+      {
+        content,
+        user_id: user.id,
+        user_email: user.email,
+      },
     ])
 
     if (error) {
-      alert("Gagal posting. Cek console log!")
-      console.error("POST ERROR:", error)
+      alert('Gagal post!')
+      console.error(error)
     } else {
-      setContent("")
+      setContent('')
       fetchPosts()
     }
   }
 
-  async function fetchPosts() {
-    const { data } = await supabase
-      .from("posts")
-      .select("*")
-      .order("created_at", { ascending: false })
+  async function signInWithEmail(e: any) {
+    e.preventDefault()
 
-    setPosts(data ?? [])
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+    })
+
+    if (error) {
+      alert('Login gagal')
+      console.error(error)
+    } else {
+      alert('Cek email lo untuk login link!')
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    location.reload()
   }
 
   useEffect(() => {
@@ -53,41 +73,49 @@ export default function Home() {
   }, [])
 
   return (
-    <main style={{ backgroundColor: "white", color: "black", minHeight: "100vh", padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1 style={{ fontSize: "2rem", fontWeight: "bold" }}>🧠 Sosnet v2</h1>
+    <main style={{ background: 'white', color: 'black', padding: '2rem', fontFamily: 'sans-serif', minHeight: '100vh' }}>
+      <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Sosnet v3 🚀</h1>
 
-      <input
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        style={{ display: "block", marginBottom: "0.5rem", padding: "0.5rem", width: "100%" }}
-      />
+      {!session ? (
+        <form onSubmit={signInWithEmail} style={{ marginBottom: '2rem' }}>
+          <input
+            placeholder="Masukkan email kamu"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ padding: '0.5rem', width: '100%', marginBottom: '0.5rem' }}
+          />
+          <button type="submit" style={{ padding: '0.5rem 1rem', backgroundColor: '#0070f3', color: 'white', border: 'none' }}>
+            Login via Email
+          </button>
+        </form>
+      ) : (
+        <>
+          <p>Logged in as: <strong>{session.user.email}</strong></p>
+          <button onClick={handleLogout} style={{ marginBottom: '1rem', padding: '0.25rem 0.5rem' }}>
+            Logout
+          </button>
 
-      <textarea
-        placeholder="What's on your mind?"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        style={{ display: "block", width: "100%", padding: "0.5rem", marginBottom: "0.5rem", height: "100px" }}
-      />
+          <textarea
+            placeholder="Apa yang lo pikirin hari ini?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            style={{ width: '100%', height: '100px', padding: '0.5rem', marginBottom: '0.5rem' }}
+          />
+          <button onClick={handlePost} style={{ padding: '0.5rem 1rem', backgroundColor: '#28a745', color: 'white', border: 'none' }}>
+            Post
+          </button>
+        </>
+      )}
 
-      <button
-        onClick={handlePost}
-        style={{ padding: "0.5rem 1rem", backgroundColor: "#0070f3", color: "white", border: "none", borderRadius: "4px" }}
-      >
-        Post
-      </button>
+      <hr style={{ margin: '2rem 0' }} />
 
-      <hr style={{ margin: "2rem 0" }} />
-
-      <div>
-        {posts.map((p) => (
-          <div key={p.id} style={{ marginBottom: "1rem", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "4px" }}>
-            <strong>@{p.username || "anon"}</strong>
-            <p>{p.content}</p>
-            <small style={{ color: "#888" }}>{new Date(p.created_at).toLocaleString()}</small>
-          </div>
-        ))}
-      </div>
+      {posts.map((post) => (
+        <div key={post.id} style={{ borderBottom: '1px solid #ccc', marginBottom: '1rem', paddingBottom: '1rem' }}>
+          <p><strong>{post.user_email}</strong></p>
+          <p>{post.content}</p>
+          <small>{new Date(post.created_at).toLocaleString()}</small>
+        </div>
+      ))}
     </main>
   )
 }
