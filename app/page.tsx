@@ -12,19 +12,19 @@ type Post = {
 }
 
 export default function Page() {
-  const { supabase, session } = useSupabase()
-  const [posts, setPosts] = useState<Post[]>([])
-  const [content, setContent] = useState('')
-  const [email, setEmail] = useState('')
+  const { supabaseClient, session } = useSupabase()
+const [posts, setPosts] = useState<Post[]>([])
+const [content, setContent] = useState('')
+const [email, setEmail] = useState('')
 
-  async function fetchPosts() {
-    const { data } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
+async function fetchPosts() {
+  const { data } = await supabaseClient
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false })
 
-    setPosts(data ?? [])
-  }
+  setPosts(data ?? [])
+}
 
   async function handlePost() {
     if (!content.trim()) return
